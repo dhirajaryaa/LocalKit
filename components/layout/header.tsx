@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearch } from "@/components/search/search-provider";
 import { Icon } from "@/components/ui/icon";
+import { TOOLS } from "@/lib/tools/registry";
 import { brand, brandMark, headerNav, iconButton, kbd } from "@/lib/ui";
 import { cn } from "@/lib/ui";
 import { BrandMark } from "./footer";
@@ -61,7 +62,10 @@ export function Header() {
           </Link>
 
           <nav className={headerNav} aria-label="Primary">
-            <Link href="/tools">Tools</Link>
+            <Link href="/tools" className="inline-flex items-center gap-1.5">
+              Tools
+              <span className={toolCountBadge}>{TOOLS.length}</span>
+            </Link>
             <Link href="/#faq">FAQ</Link>
           </nav>
 
@@ -124,7 +128,8 @@ export function Header() {
       >
         <nav className="grid gap-1" aria-label="Mobile">
           <Link href="/tools" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
-            Tools
+            <span>Tools</span>
+            <span className={cn(toolCountBadge, "ml-auto")}>{TOOLS.length}</span>
           </Link>
           <Link href="/#faq" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
             FAQ
@@ -171,3 +176,6 @@ export function Header() {
 
 const mobileLink =
   "flex min-h-11 items-center border-0 border-b border-line bg-transparent px-0 py-2 text-left text-base text-ink";
+
+const toolCountBadge =
+  "inline-flex h-5 min-w-5 items-center justify-center rounded bg-code px-1 font-mono text-[10px] tabular-nums text-ink-muted";
