@@ -19,7 +19,12 @@ export function useProfile(): ProfileData {
       if (raw) {
         const parsed = JSON.parse(raw) as CachedProfile;
         if (parsed?.data && Date.now() - parsed.at < PROFILE_TTL) {
-          setProfile({ ...FALLBACK_PROFILE, ...parsed.data, links: parsed.data.links ?? [] });
+          setProfile({
+            ...FALLBACK_PROFILE,
+            ...parsed.data,
+            links: parsed.data.links ?? FALLBACK_PROFILE.links,
+            featured: parsed.data.featured ?? FALLBACK_PROFILE.featured,
+          });
           return;
         }
       }
@@ -47,7 +52,10 @@ export function useProfile(): ProfileData {
           name: parsed.name || FALLBACK_PROFILE.name,
           bio: parsed.bio || FALLBACK_PROFILE.bio,
           site: parsed.site || FALLBACK_PROFILE.site,
-          links: parsed.links,
+          writing: parsed.writing || FALLBACK_PROFILE.writing,
+          feed: parsed.feed || FALLBACK_PROFILE.feed,
+          links: parsed.links.length > 0 ? parsed.links : FALLBACK_PROFILE.links,
+          featured: parsed.featured.length > 0 ? parsed.featured : FALLBACK_PROFILE.featured,
         };
         setProfile(resolved);
         try {

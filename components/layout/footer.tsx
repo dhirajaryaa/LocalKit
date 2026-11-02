@@ -133,7 +133,7 @@ export function Footer() {
   );
 }
 
-export function BrandMark({ size = 24 }: { size?: number }) {
+export function BrandMark({ size = 28 }: { size?: number }) {
   return (
     <svg
       className={brandMark}
@@ -144,13 +144,13 @@ export function BrandMark({ size = 24 }: { size?: number }) {
       aria-hidden="true"
     >
       <path
-        d="M9 4H5v16h4M15 4h4v16h-4"
+        d="M8.5 4H5v16h3.5M15.5 4H19v16h-3.5"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="12" cy="12" r="2.25" />
+      <circle cx="12" cy="12" r="4.25" />
     </svg>
   );
 }

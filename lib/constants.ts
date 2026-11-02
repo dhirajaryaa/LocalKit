@@ -50,7 +50,19 @@ export const PROFILE_TTL = 6 * 60 * 60 * 1000;
 
 export const FALLBACK_PROFILE = {
   name: "Dhiraj Arya",
-  bio: "",
-  site: "https://dhirajarya.in",
-  links: [] as Array<{ label: string; url: string }>,
+  role: "Self-taught full-stack engineer",
+  bio: "Self-taught full-stack engineer building small, useful tools for the web.",
+  site: "https://dhirajarya.in/",
+  writing: "https://dhirajarya.in/blog",
+  feed: "https://dhirajarya.in/rss.xml",
+  links: [
+    { label: "GitHub", url: "https://github.com/dhirajaryaa" },
+    { label: "X", url: "https://twitter.com/dhirajarya01" },
+    { label: "LinkedIn", url: "https://linkedin.com/in/dhirajarya01" },
+  ] as Array<{ label: string; url: string }>,
+  featured: [
+    { label: "Temp Mail", url: "https://tempmail.dhirajarya.in" },
+    { label: "Compressly", url: "https://compressly.dhirajarya.in" },
+    { label: "LowPDF", url: "https://lowpdf.dhirajarya.in" },
+  ] as Array<{ label: string; url: string }>,
 };

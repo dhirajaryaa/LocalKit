@@ -6,9 +6,11 @@ import { ToolCard } from "@/components/tools/tool-card";
 import { CategoryIcon, Icon } from "@/components/ui/icon";
 import { FEATURED_SLUGS, TOOLS, getCategoryCounts, getTool } from "@/lib/tools/registry";
 import { CATEGORIES } from "@/lib/tools/types";
-import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl } from "@/lib/constants";
+import { SITE_DESCRIPTION, SITE_NAME, SUPPORT_URL, absoluteUrl } from "@/lib/constants";
 import {
   bodyL,
+  btnLg,
+  btnPrimary,
   cn,
   displayL,
   displayXl,
@@ -133,16 +135,18 @@ export default function HomePage() {
           )}
         >
           <div className="min-[900px]:pt-[18px]">
-            <p className={eyebrow}>19 Tools. Zero uploads.</p>
-            <h1 className={cn(displayXl, "mt-[22px] max-w-[760px]")}>
+            <p className={cn(eyebrow, "motion-rise")}>19 Tools. Zero uploads.</p>
+            <h1 className={cn(displayXl, "motion-rise motion-rise-1 mt-[22px] max-w-[760px]")}>
               Your files never leave this tab.
             </h1>
-            <p className={cn(bodyL, "mt-[26px] max-w-[52ch] text-ink-muted")}>
+            <p className={cn(bodyL, "motion-rise motion-rise-2 mt-[26px] max-w-[52ch] text-ink-muted")}>
               Compress, convert, merge, trim, and extract images, PDFs, video, GIFs, and audio.
               Every tool runs in your browser.
             </p>
-            <HeroActions />
-            <div className={cn(heroMeta, "mt-[22px]")}>
+            <div className="motion-rise motion-rise-3">
+              <HeroActions />
+            </div>
+            <div className={cn(heroMeta, "motion-rise motion-rise-4 mt-[22px]")}>
               <span>No account</span>
               <span>No watermark</span>
               <span>No file upload</span>
@@ -181,7 +185,7 @@ export default function HomePage() {
               >
                 <CategoryIcon category={category.id} size={14} />
                 {category.name}
-                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded bg-code px-1 font-mono text-[9px] tabular-nums text-ink-muted">
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded bg-accent px-1 font-mono text-[9px] tabular-nums text-accent-ink">
                   {counts[category.id]}
                 </span>
               </Link>
@@ -266,11 +270,82 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className={section} id="support">
+        <div className={shell}>
+          <p className={sectionLabel}>
+            <Icon name="plus" size={13} />
+            04 / Keep it free
+          </p>
+          <div className="overflow-hidden rounded-2xl border border-accent/35 bg-surface">
+            <div className="grid gap-9 p-6 md:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] md:items-center md:gap-12 md:p-10">
+              <div>
+                <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-accent">
+                  Built by one person
+                </p>
+                <h2 className={cn(displayL, "max-w-[680px]")}>
+                  Help me build more everyday tools.
+                </h2>
+                <p className={cn(bodyL, "mt-4 max-w-[620px] text-ink-muted")}>
+                  LocalKit has no ads, accounts, or subscription. If it saved you a step today, a
+                  one-time contribution helps me keep building the small tools you reach for every
+                  day.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+                  <a
+                    href={SUPPORT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(btnPrimary, btnLg)}
+                  >
+                    Support the work
+                    <Icon name="external" size={15} />
+                  </a>
+                  <span className="text-xs text-ink-muted">
+                    One-time · UPI or card · no subscription
+                  </span>
+                </div>
+              </div>
+              <div className="border-t border-line pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                <p className="font-display text-[22px] font-semibold leading-tight tracking-[-0.03em]">
+                  Small tools. Real use.
+                </p>
+                <dl className="mt-5 grid grid-cols-3 gap-4 md:grid-cols-1 md:gap-3">
+                  <div className="md:flex md:items-baseline md:justify-between md:gap-4 md:border-b md:border-line md:pb-2.5">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-muted">
+                      Tools live
+                    </dt>
+                    <dd className="mt-1 font-display text-2xl font-semibold tabular-nums md:mt-0">
+                      {TOOLS.length}
+                    </dd>
+                  </div>
+                  <div className="md:flex md:items-baseline md:justify-between md:gap-4 md:border-b md:border-line md:pb-2.5">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-muted">
+                      Files uploaded
+                    </dt>
+                    <dd className="mt-1 font-display text-2xl font-semibold tabular-nums md:mt-0">
+                      0
+                    </dd>
+                  </div>
+                  <div className="md:flex md:items-baseline md:justify-between md:gap-4">
+                    <dt className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-muted">
+                      Ads or trackers
+                    </dt>
+                    <dd className="mt-1 font-display text-2xl font-semibold tabular-nums md:mt-0">
+                      0
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className={section} id="faq">
         <div className={shell}>
           <p className={sectionLabel}>
             <Icon name="info" size={13} />
-            04 / FAQ
+            05 / FAQ
           </p>
           <div className="grid gap-8 min-[900px]:grid-cols-[4fr_8fr] min-[900px]:gap-16">
             <div>

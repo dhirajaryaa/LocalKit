@@ -7,7 +7,7 @@ import { CategoryIcon, Icon } from "@/components/ui/icon";
 import { OG_IMAGE, SITE_NAME, absoluteUrl } from "@/lib/constants";
 import { TOOLS, getRelatedTools, getTool } from "@/lib/tools/registry";
 import { CATEGORIES } from "@/lib/tools/types";
-import { chip, cn, eyebrow, localBadge, shell } from "@/lib/ui";
+import { accentBadge, chip, cn, eyebrow, shell } from "@/lib/ui";
 
 interface ToolPageProps {
   params: Promise<{ slug: string }>;
@@ -119,7 +119,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
             <h1 className="text-[32px] md:text-[clamp(34px,4vw,44px)]">{tool.name}</h1>
             <p className="mt-2 max-w-[720px] text-ink-muted">{tool.description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className={localBadge}>
+              <span className={accentBadge}>
                 <Icon name="laptop" size={12} />
                 Runs locally
               </span>
