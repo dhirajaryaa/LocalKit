@@ -1,69 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { compressImage, loadImage, releaseImage, type LoadedImage } from "@/lib/engines/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  compressImage,
+  convertImage,
+  loadImage,
+  releaseImage,
+  resizeImage,
+  type ImageFormat,
+  type LoadedImage,
+} from "@/lib/engines/image";
 import { downloadBlob } from "@/lib/files/download";
-import { formatSaved, formatBytes } from "@/lib/files/format";
+import { formatBytes, formatSaved } from "@/lib/files/format";
 import { Icon } from "@/components/ui/icon";
 import {
   btnPrimary,
+  btnSecondary,
   btnSm,
   cn,
   fieldLabel,
   inlineDanger,
+  accentBadge,
   optionHelp,
   optionValue,
   range,
+  segmented,
+  segmentedButton,
+  select,
   textLink,
 } from "@/lib/ui";
 
+type DemoTool = "compress" | "convert" | "resize";
+
 interface DemoResult {
+  blob: Blob;
+  fileName: string;
   outputSize: number;
-  originalSize: number;
   width: number;
   height: number;
-  blob: Blob;
 }
 
+const DEMO_TOOLS: Array<{ id: DemoTool; label: string }> = [
+  { id: "compress", label: "Compress" },
+  { id: "convert", label: "Convert" },
+  { id: "resize", label: "Resize" },
+];
+
+const AUTO_CYCLE: DemoTool[] = ["compress", "convert", "resize"];
+const AUTO_WORKING_MS = 850;
+const AUTO_RESULT_MS = 2200;
+
 export function HeroDemo() {
+  const [tool, setTool] = useState<DemoTool>("compress");
   const [quality, setQuality] = useState(72);
+  const [format, setFormat] = useState<ImageFormat>("webp");
+  const [resizeWidth, setResizeWidth] = useState(1200);
   const [result, setResult] = useState<DemoResult | null>(null);
-  const [busy, setBusy] = useState(true);
+  const [originalSize, setOriginalSize] = useState(0);
+  const [originalDimensions, setOriginalDimensions] = useState("");
+  const [sampleUrl, setSampleUrl] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [started, setStarted] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const [autoPlay, setAutoPlay] = useState(true);
   const loadedRef = useRef<LoadedImage | null>(null);
-  const sampleUrlRef = useRef<string>("");
   const requestRef = useRef(0);
 
   useEffect(() => {
-    const node = cardRef.current;
-    if (!node) return;
-    let timer = 0;
-    const start = () => {
-      if (started) return;
-      setStarted(true);
-    };
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          start();
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "120px" },
-    );
-    observer.observe(node);
-    timer = window.setTimeout(start, 1200);
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(timer);
-    };
-  }, [started]);
-
-  useEffect(() => {
-    if (!started) return;
     let cancelled = false;
     const load = async () => {
       try {
@@ -77,127 +81,346 @@ export function HeroDemo() {
           return;
         }
         loadedRef.current = loaded;
-        sampleUrlRef.current = loaded.objectUrl;
-        await runCompression(quality, true);
+        setSampleUrl(loaded.objectUrl);
+        setOriginalSize(loaded.file.size);
+        setOriginalDimensions(`${loaded.width} × ${loaded.height} px`);
       } catch {
         if (!cancelled) {
-          setBusy(false);
           setError("The demo could not run in this browser. Open the full tool to try your own file.");
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     void load();
     return () => {
       cancelled = true;
+      requestRef.current += 1;
       releaseImage(loadedRef.current);
       loadedRef.current = null;
     };
-    // The quality effect below handles later runs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started]);
+  }, []);
 
   useEffect(() => {
-    if (!started || !loadedRef.current) return;
-    const timer = window.setTimeout(() => {
-      void runCompression(quality, false);
-    }, 250);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quality, started]);
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const respectPreference = () => {
+      if (query.matches) setAutoPlay(false);
+    };
+    respectPreference();
+    query.addEventListener("change", respectPreference);
+    return () => query.removeEventListener("change", respectPreference);
+  }, []);
 
-  const runCompression = async (value: number, firstRun: boolean) => {
-    const loaded = loadedRef.current;
-    if (!loaded) return;
-    const request = requestRef.current + 1;
-    requestRef.current = request;
-    setBusy(true);
+  const resetResult = () => {
+    requestRef.current += 1;
+    setResult(null);
     setError("");
-    try {
-      const compression = await compressImage(loaded, {
-        mode: "quality",
-        quality: value,
-        targetBytes: 0,
-        format: "webp",
-        maxWidth: 1600,
-        maxHeight: 0,
-      });
-      if (request !== requestRef.current) return;
-      setResult({
-        blob: compression.blob,
-        outputSize: compression.outputSize,
-        originalSize: compression.originalSize,
-        width: compression.width,
-        height: compression.height,
-      });
-    } catch {
-      if (request !== requestRef.current) return;
-      if (firstRun) {
-        setError("The demo could not run in this browser. Open the full tool to try your own file.");
+    setBusy(false);
+  };
+
+  const chooseTool = (next: DemoTool) => {
+    setAutoPlay(false);
+    resetResult();
+    setTool(next);
+  };
+
+  const runPreview = useCallback(
+    async (nextTool: DemoTool, withWorkingCue = false): Promise<boolean> => {
+      const loaded = loadedRef.current;
+      if (!loaded) return false;
+      const request = requestRef.current + 1;
+      requestRef.current = request;
+      setBusy(true);
+      setError("");
+      setResult(null);
+      const started = performance.now();
+
+      try {
+        let output;
+        if (nextTool === "compress") {
+          output = await compressImage(loaded, {
+            mode: "quality",
+            quality,
+            targetBytes: 0,
+            format: "webp",
+            maxWidth: 1600,
+            maxHeight: 0,
+          });
+        } else if (nextTool === "convert") {
+          output = await convertImage(loaded, {
+            format,
+            quality: 82,
+            background: "#FFFFFF",
+          });
+        } else {
+          const targetWidth = Math.min(resizeWidth, loaded.width);
+          const targetHeight = Math.max(
+            1,
+            Math.round(loaded.height * (targetWidth / loaded.width)),
+          );
+          output = await resizeImage(loaded, {
+            mode: "dimensions",
+            width: targetWidth,
+            height: targetHeight,
+            percentage: 100,
+            fit: "stretch",
+            allowUpscale: false,
+            background: "#FFFFFF",
+            format: "webp",
+            quality: 82,
+          });
+        }
+
+        if (withWorkingCue) {
+          const remaining = AUTO_WORKING_MS - (performance.now() - started);
+          if (remaining > 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, remaining));
+          }
+        }
+        if (request !== requestRef.current) return false;
+        setResult({
+          blob: output.blob,
+          fileName: output.fileName,
+          outputSize: output.blob.size,
+          width: output.width,
+          height: output.height,
+        });
+        return true;
+      } catch {
+        if (request !== requestRef.current) return false;
+        setError("The preview could not finish. Open the full tool to try your own file.");
+        return false;
+      } finally {
+        if (request === requestRef.current) setBusy(false);
       }
-    } finally {
-      if (request === requestRef.current) setBusy(false);
-    }
+    },
+    [format, quality, resizeWidth],
+  );
+
+  useEffect(() => {
+    if (!sampleUrl || !autoPlay) return;
+    let cancelled = false;
+    let index = 0;
+    const timers = new Set<number>();
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const timer = window.setTimeout(() => {
+          timers.delete(timer);
+          resolve();
+        }, ms);
+        timers.add(timer);
+      });
+
+    const loop = async () => {
+      while (!cancelled) {
+        const nextTool = AUTO_CYCLE[index % AUTO_CYCLE.length];
+        index += 1;
+        setTool(nextTool);
+        await wait(450);
+        if (cancelled) return;
+        const completed = await runPreview(nextTool, true);
+        if (cancelled) return;
+        await wait(completed ? AUTO_RESULT_MS : 1400);
+      }
+    };
+
+    void loop();
+    return () => {
+      cancelled = true;
+      for (const timer of timers) window.clearTimeout(timer);
+      timers.clear();
+    };
+  }, [autoPlay, runPreview, sampleUrl]);
+
+  const run = async () => {
+    setAutoPlay(false);
+    await runPreview(tool);
   };
 
   const download = () => {
     if (!result) return;
-    downloadBlob(result.blob, "localkit-sample-compressed.webp");
+    setAutoPlay(false);
+    downloadBlob(result.blob, result.fileName);
   };
 
-  const saved = result ? formatSaved(result.originalSize, result.outputSize) : "";
-  const reduced = useReducedMotion();
+  const outputFormat =
+    tool === "convert" ? format.toUpperCase() : "WebP";
+  const change = result ? formatSaved(originalSize, result.outputSize) : "—";
 
   return (
     <div
-      className="w-full max-w-[620px] overflow-hidden rounded-xl border border-line bg-surface scroll-mt-[84px] min-[900px]:max-w-none"
+      className="motion-rise motion-rise-2 w-full max-w-[620px] overflow-hidden rounded-xl border border-line bg-surface scroll-mt-[84px] min-[900px]:max-w-none"
       id="demo"
-      ref={cardRef}
-      aria-label="Live image compressor demo"
+      aria-label="Live image tool preview"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
-        <span>Try it</span>
-        <strong className="font-medium text-ink">Image compressor</strong>
+      <div className="border-b border-line px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
+            Try a tool
+          </span>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-ink-muted transition-colors hover:text-ink"
+              onClick={() => setAutoPlay((value) => !value)}
+              aria-pressed={autoPlay}
+              aria-label={autoPlay ? "Pause auto preview" : "Resume auto preview"}
+            >
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  autoPlay ? "bg-accent" : "bg-line-strong",
+                  autoPlay && busy ? "working-cursor" : "",
+                )}
+                aria-hidden="true"
+              />
+              {autoPlay ? "Auto" : "Paused"}
+            </button>
+            <span className={accentBadge}>
+              <Icon name="laptop" size={12} />
+              Local
+            </span>
+          </div>
+        </div>
+        <div className={cn(segmented, "mt-2.5")} role="group" aria-label="Preview tool">
+          {DEMO_TOOLS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={cn(segmentedButton, "h-8")}
+              aria-pressed={tool === item.id}
+              onClick={() => chooseTool(item.id)}
+              disabled={busy}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
+
       <div className="relative aspect-[4/3] overflow-hidden bg-code">
-        {sampleUrlRef.current && result ? (
+        {sampleUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             className="block size-full object-cover"
-            src={sampleUrlRef.current}
+            src={sampleUrl}
             alt="Bundled coastal landscape sample"
             width={1600}
             height={1200}
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center bg-code text-xs text-ink-muted">
-            {error ? "Sample unavailable" : "Compressing locally..."}
+            {error && !loading ? "Sample unavailable" : "Loading sample..."}
           </div>
         )}
-        {busy && result ? (
-          <span className="absolute right-2.5 top-2.5 rounded border border-line bg-raised px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em]">
-            Working
+        {loading ? (
+          <span className="absolute left-2.5 top-2.5 rounded border border-line bg-raised px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em]">
+            Loading
           </span>
+        ) : busy ? (
+          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded border border-line bg-raised px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em]">
+            Working
+            <span className="working-cursor inline-block h-2.5 w-[2px] bg-accent" aria-hidden="true" />
+          </span>
+        ) : (
+          <span className="absolute left-2.5 top-2.5 rounded border border-line bg-raised px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em]">
+            {tool === "compress" ? "Compressor" : tool === "convert" ? "Converter" : "Resizer"}
+          </span>
+        )}
+        {busy ? (
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="working-scan absolute inset-x-0 top-0 h-full">
+              <div className="h-px w-full bg-accent/80" />
+            </div>
+            <span className="demo-pointer absolute left-[47%] top-[44%] text-ink">
+              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+                <path
+                  d="M3 2.5 16.5 12.5 10 13.8 6.6 20.5 3 2.5Z"
+                  fill="currentColor"
+                  stroke="#F4F1EA"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="demo-click absolute left-0 top-0 size-7 rounded-full border border-accent/70" />
+            </span>
+            <div className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden bg-accent/15">
+              <div className="working-progress h-full w-1/3 bg-accent" />
+            </div>
+          </div>
         ) : null}
       </div>
+
       <div className="p-4">
-        <div className="mb-1 flex items-center justify-between gap-3">
-          <label className={fieldLabel} htmlFor="demo-quality">
-            Quality
-          </label>
-          <span className={optionValue}>{quality}</span>
-        </div>
-        <input
-          id="demo-quality"
-          className={cn(range, "w-full")}
-          type="range"
-          min={40}
-          max={95}
-          step={1}
-          value={quality}
-          onChange={(event) => setQuality(Number(event.target.value))}
-          aria-valuetext={`${quality} percent`}
-        />
-        <p className={cn(optionHelp, "mt-1")}>Output format: WebP</p>
+        {tool === "compress" ? (
+          <>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <label className={fieldLabel} htmlFor="demo-quality">
+                Quality
+              </label>
+              <span className={optionValue}>{quality}</span>
+            </div>
+            <input
+              id="demo-quality"
+              className={cn(range, "w-full")}
+              type="range"
+              min={40}
+              max={95}
+              step={1}
+              value={quality}
+              onChange={(event) => {
+                setAutoPlay(false);
+                setQuality(Number(event.target.value));
+                resetResult();
+              }}
+              aria-valuetext={`${quality} percent`}
+            />
+            <p className={cn(optionHelp, "mt-1")}>Output format: WebP</p>
+          </>
+        ) : tool === "convert" ? (
+          <>
+            <label className={cn(fieldLabel, "mb-1 block")} htmlFor="demo-format">
+              Output format
+            </label>
+            <select
+              id="demo-format"
+              className={select}
+              value={format}
+              onChange={(event) => {
+                setAutoPlay(false);
+                setFormat(event.target.value as ImageFormat);
+                resetResult();
+              }}
+            >
+              <option value="webp">WebP</option>
+              <option value="png">PNG</option>
+              <option value="jpg">JPG</option>
+            </select>
+            <p className={cn(optionHelp, "mt-1")}>JPG uses a white background for transparency.</p>
+          </>
+        ) : (
+          <>
+            <label className={cn(fieldLabel, "mb-1 block")} htmlFor="demo-width">
+              Target width
+            </label>
+            <select
+              id="demo-width"
+              className={select}
+              value={resizeWidth}
+              onChange={(event) => {
+                setAutoPlay(false);
+                setResizeWidth(Number(event.target.value));
+                resetResult();
+              }}
+            >
+              <option value={1600}>1,600 px</option>
+              <option value={1200}>1,200 px</option>
+              <option value={800}>800 px</option>
+              <option value={480}>480 px</option>
+            </select>
+            <p className={cn(optionHelp, "mt-1")}>Height follows the original aspect ratio.</p>
+          </>
+        )}
 
         <div
           className="my-[18px] grid grid-cols-3 gap-2 border-y border-line py-3"
@@ -208,7 +431,7 @@ export function HeroDemo() {
               Original
             </span>
             <strong className="text-[13px] font-medium tabular-nums">
-              {result ? formatBytes(result.originalSize) : "—"}
+              {originalSize ? formatBytes(originalSize) : "—"}
             </strong>
           </div>
           <div>
@@ -223,7 +446,7 @@ export function HeroDemo() {
             <span className="mb-0.5 block font-mono text-[10px] uppercase tracking-[0.07em] text-ink-muted">
               Change
             </span>
-            <strong className="text-[13px] font-medium tabular-nums">{result ? saved : "—"}</strong>
+            <strong className="text-[13px] font-medium tabular-nums">{change}</strong>
           </div>
         </div>
 
@@ -233,44 +456,65 @@ export function HeroDemo() {
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             className={cn(btnPrimary, btnSm)}
+            onClick={() => void run()}
+            disabled={!sampleUrl || busy}
+          >
+            {busy ? "Working..." : result ? "Run again" : "Run preview"}
+          </button>
+          <button
+            type="button"
+            className={cn(btnSecondary, btnSm)}
             onClick={download}
             disabled={!result || busy}
           >
             <Icon name="download" size={14} />
-            Download result
+            Download
           </button>
-          <Link className={textLink} href="/tools/image-compressor">
-            Open the full tool
+          <Link className={textLink} href={`/tools/${tool === "compress" ? "image-compressor" : tool === "convert" ? "image-converter" : "image-resizer"}`}>
+            Open full tool
             <Icon name="arrow-right" size={14} />
           </Link>
         </div>
         {result ? (
-          <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-muted">
-            {result.width} × {result.height} px · quality {quality}
+          <p className="mt-3.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-muted">
+            <span>{result.width} × {result.height} px</span>
+            <span aria-hidden="true">·</span>
+            <span>{outputFormat}</span>
+            {originalDimensions ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>from {originalDimensions}</span>
+              </>
+            ) : null}
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-3.5 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-muted">
+            <Icon name={autoPlay ? "refresh" : "play"} size={13} />
+            {autoPlay ? (
+              "Auto preview cycles through all three tools."
+            ) : (
+              <>
+                Preview paused.
+                <button
+                  type="button"
+                  className="underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink hover:decoration-accent"
+                  onClick={() => setAutoPlay(true)}
+                >
+                  Resume auto
+                </button>
+              </>
+            )}
+          </p>
+        )}
         <p className="mt-3.5 flex items-center gap-1.5 text-xs text-ink-muted">
           <Icon name="lock" size={13} />
           Processed on your device. Nothing uploaded.
         </p>
       </div>
-      <span className="sr-only">{reduced ? "Reduced motion is on." : ""}</span>
     </div>
   );
-}
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches);
-    const listener = () => setReduced(query.matches);
-    query.addEventListener("change", listener);
-    return () => query.removeEventListener("change", listener);
-  }, []);
-  return reduced;
 }

@@ -636,7 +636,7 @@ export function ResultShell({
   children?: ReactNode;
 }) {
   return (
-    <section className={resultPanel} aria-labelledby="result-title">
+    <section className={cn(resultPanel, "motion-fade")} aria-labelledby="result-title">
       <div className={resultHeader}>
         <h2 id="result-title" className="text-base tracking-[-0.01em]">
           {title}

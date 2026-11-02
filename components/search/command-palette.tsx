@@ -247,14 +247,14 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-start justify-center bg-bg/85 p-5 pt-[15vh] max-md:items-stretch max-md:p-0"
+      className="motion-fade fixed inset-0 z-[80] flex items-start justify-center bg-bg/85 p-5 pt-[15vh] max-md:items-stretch max-md:p-0"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
-        className="flex max-h-[70vh] w-[min(640px,100%)] flex-col overflow-hidden rounded-xl border border-line bg-raised shadow-sm max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:rounded-none max-md:border-0"
+        className="motion-pop flex max-h-[70vh] w-[min(640px,100%)] flex-col overflow-hidden rounded-xl border border-line bg-raised shadow-sm max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:rounded-none max-md:border-0"
         role="dialog"
         aria-modal="true"
         aria-labelledby="palette-title"

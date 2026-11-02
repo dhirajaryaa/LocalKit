@@ -174,6 +174,155 @@
   }
 }
 
+@layer utilities {
+  @keyframes lk-rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes lk-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes lk-pop {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 6px, 0) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes lk-blink {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes lk-demo-scan {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+    }
+    12%,
+    88% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(0, 100%, 0);
+    }
+  }
+
+  @keyframes lk-demo-progress {
+    from {
+      transform: translate3d(-110%, 0, 0);
+    }
+    to {
+      transform: translate3d(310%, 0, 0);
+    }
+  }
+
+  @keyframes lk-demo-pointer {
+    0%,
+    100% {
+      transform: translate3d(8px, 6px, 0);
+    }
+    45% {
+      transform: translate3d(-12px, -8px, 0);
+    }
+    60% {
+      transform: translate3d(-6px, -2px, 0);
+    }
+  }
+
+  @keyframes lk-demo-click {
+    0%,
+    38% {
+      opacity: 0;
+      transform: scale(0.45);
+    }
+    46% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    62%,
+    100% {
+      opacity: 0;
+      transform: scale(1.55);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-rise {
+      animation: lk-rise 480ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+    }
+    .motion-rise-1 {
+      animation-delay: 55ms;
+    }
+    .motion-rise-2 {
+      animation-delay: 105ms;
+    }
+    .motion-rise-3 {
+      animation-delay: 155ms;
+    }
+    .motion-rise-4 {
+      animation-delay: 205ms;
+    }
+    .motion-fade {
+      animation: lk-fade 320ms ease-out both;
+    }
+    .motion-pop {
+      animation: lk-pop 200ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+    }
+    .working-cursor {
+      animation: lk-blink 900ms steps(1, end) infinite;
+    }
+    .working-scan {
+      animation: lk-demo-scan 1.15s ease-in-out infinite;
+    }
+    .working-progress {
+      animation: lk-demo-progress 1.15s ease-in-out infinite;
+    }
+    .demo-pointer {
+      animation: lk-demo-pointer 2.4s ease-in-out infinite;
+    }
+    .demo-click {
+      animation: lk-demo-click 2.4s ease-in-out infinite;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) and (hover: hover) {
+    .motion-lift {
+      transition:
+        transform 180ms ease,
+        background-color 180ms ease,
+        border-color 180ms ease;
+    }
+    .motion-lift:hover {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -186,5 +335,16 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .working-scan,
+  .demo-pointer,
+  .demo-click {
+    display: none;
+  }
+
+  .working-progress {
+    width: 40%;
+    transform: none;
   }
 }

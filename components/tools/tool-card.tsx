@@ -8,7 +8,7 @@ export function ToolCard({ tool }: { tool: Tool }) {
   return (
     <Link
       href={`/tools/${tool.slug}`}
-      className="group relative flex min-h-[220px] flex-col border-b border-r border-line bg-bg p-6 transition-colors hover:bg-surface"
+      className="group motion-lift relative flex min-h-[220px] flex-col border-b border-r border-line bg-bg p-6 transition-colors hover:bg-surface"
       aria-label={`${tool.name}: ${tool.tagline}`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -24,7 +24,7 @@ export function ToolCard({ tool }: { tool: Tool }) {
           </span>
         </div>
         <span
-          className="text-line-strong transition-colors group-hover:text-accent"
+          className="text-line-strong transition-[color,transform] duration-200 group-hover:-translate-y-0.5 group-hover:text-accent motion-reduce:transform-none"
           aria-hidden="true"
         >
           <Icon name="arrow-right" size={18} />

@@ -28,7 +28,7 @@ const categoryTab =
   "relative inline-flex h-10 items-center gap-2 whitespace-nowrap border-0 bg-transparent px-3 text-[13px] text-ink-muted after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:bg-transparent hover:text-ink aria-pressed:text-ink aria-pressed:after:bg-accent";
 
 const categoryCount =
-  "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded bg-code px-1 font-mono text-[9px] leading-none tabular-nums text-ink-muted";
+  "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded bg-accent px-1 font-mono text-[9px] leading-none tabular-nums text-accent-ink";
 
 
 export function ToolsDirectory() {
@@ -252,8 +252,8 @@ export function ToolsDirectory() {
                 const tools = results.filter((tool) => tool.category === item.id);
                 if (!tools.length) return null;
                 return (
-                  <section key={item.id} aria-labelledby={`category-${item.id}`}>
-                    <div className="mb-4 mt-9 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3 first:mt-0">
+                  <section key={item.id} className="mt-12" aria-labelledby={`category-${item.id}`}>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink">
                           <CategoryIcon category={item.id} size={17} />
@@ -285,7 +285,7 @@ export function ToolsDirectory() {
               </p>
             </>
           ) : (
-            <div className={toolGrid}>
+            <div className={cn(toolGrid, "mt-7")}>
               {results.map((tool) => (
                 <ToolCard key={tool.slug} tool={tool} />
               ))}

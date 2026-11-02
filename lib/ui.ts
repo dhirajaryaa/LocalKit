@@ -21,7 +21,7 @@ export const muted = "text-ink-muted";
 export const label = "block font-mono text-[11px] uppercase tracking-[0.05em] text-ink-muted";
 
 export const btn =
-  "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-4 text-sm font-medium leading-none transition-colors disabled:opacity-50";
+  "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-4 text-sm font-medium leading-none transition-[color,background-color,border-color,transform] duration-150 active:translate-y-px disabled:opacity-50 motion-reduce:active:translate-y-0";
 export const btnPrimary = cn(btn, "border-accent bg-accent text-accent-ink hover:brightness-90");
 export const btnSecondary = cn(
   btn,
@@ -75,6 +75,8 @@ export const chip =
   "inline-flex h-[22px] items-center rounded bg-code px-1.5 font-mono text-[10px] uppercase tracking-[0.02em] text-ink-muted";
 export const localBadge =
   "inline-flex h-6 items-center gap-1.5 rounded border border-success/35 px-2 font-mono text-[10px] uppercase tracking-[0.05em] text-success";
+export const accentBadge =
+  "inline-flex h-6 items-center gap-1.5 rounded border border-accent bg-accent px-2 font-mono text-[10px] uppercase tracking-[0.05em] text-accent-ink";
 
 export const inlineNote =
   "rounded-md border border-line bg-code px-3 py-2.5 text-xs leading-normal text-ink-muted";
