@@ -160,7 +160,6 @@ export async function loadPdfJs(file: File | Uint8Array): Promise<PdfJsLike> {
   const data = file instanceof Uint8Array ? file : new Uint8Array(await file.arrayBuffer());
   const task = pdfjs.getDocument({
     data,
-    isEvalSupported: false,
     enableXfa: false,
     useWorkerFetch: true,
   });
@@ -175,20 +174,20 @@ export interface RenderedPage {
 }
 
 export async function renderPdfPage(
-  document: PdfJsLike,
+  pdf: PdfJsLike,
   pageNumber: number,
   scale: number,
   maxSide = 8192,
   background = "#FFFFFF",
 ): Promise<RenderedPage> {
-  const page = await document.getPage(pageNumber);
+  const page = await pdf.getPage(pageNumber);
   let viewport = page.getViewport({ scale });
   let actualScale = scale;
   if (viewport.width > maxSide || viewport.height > maxSide) {
     actualScale = scale * Math.min(maxSide / viewport.width, maxSide / viewport.height);
     viewport = page.getViewport({ scale: actualScale });
   }
-  const canvas = document.createElement("canvas");
+  const canvas = globalThis.document.createElement("canvas");
   canvas.width = Math.max(1, Math.floor(viewport.width));
   canvas.height = Math.max(1, Math.floor(viewport.height));
   const context = canvas.getContext("2d", { alpha: false });
@@ -258,13 +257,13 @@ export async function watermarkPdf(
     if (pageNumber < 1 || pageNumber > document.getPageCount()) continue;
     const page = document.getPage(pageNumber - 1);
     const { width, height, rotation } = visiblePageSize(page);
-    const automatic = options.fontSize === "auto";
-    const size = automatic
-      ? Math.max(
-          12,
-          Math.min(options.layout === "center" ? 72 : 36, Math.min(width, height) * 0.09),
-        )
-      : options.fontSize;
+    const size =
+      options.fontSize === "auto"
+        ? Math.max(
+            12,
+            Math.min(options.layout === "center" ? 72 : 36, Math.min(width, height) * 0.09),
+          )
+        : options.fontSize;
     const textWidth = font.widthOfTextAtSize(options.text, size);
     const textHeight = font.heightAtSize(size);
     const angleForPage = options.rotation - rotation;
