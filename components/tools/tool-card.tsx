@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { CategoryIcon, Icon } from "@/components/ui/icon";
 import { chip } from "@/lib/ui";
-import type { Tool } from "@/lib/tools/types";
+import { CATEGORIES, type Tool } from "@/lib/tools/types";
 
 export function ToolCard({ tool }: { tool: Tool }) {
+  const category = CATEGORIES.find((item) => item.id === tool.category);
   return (
     <Link
       href={`/tools/${tool.slug}`}
@@ -11,12 +12,17 @@ export function ToolCard({ tool }: { tool: Tool }) {
       aria-label={`${tool.name}: ${tool.tagline}`}
     >
       <div className="flex items-start justify-between gap-4">
-        <span
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-line text-ink"
-          aria-hidden="true"
-        >
-          <CategoryIcon category={tool.category} size={20} />
-        </span>
+        <div className="flex items-center gap-2.5">
+          <span
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-line text-ink transition-colors group-hover:border-line-strong"
+            aria-hidden="true"
+          >
+            <CategoryIcon category={tool.category} size={20} />
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.05em] text-ink-muted">
+            {category?.name ?? tool.category}
+          </span>
+        </div>
         <span
           className="text-line-strong transition-colors group-hover:text-accent"
           aria-hidden="true"

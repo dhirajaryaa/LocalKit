@@ -26,12 +26,43 @@ export interface Category {
   name: string;
   singular: string;
   icon: string;
+  description: string;
 }
 
 export const CATEGORIES: Category[] = [
-  { id: "images", name: "Images", singular: "image", icon: "image" },
-  { id: "pdf", name: "PDF", singular: "PDF", icon: "file" },
-  { id: "video", name: "Video", singular: "video", icon: "video" },
-  { id: "gif", name: "GIF", singular: "GIF", icon: "film" },
-  { id: "audio", name: "Audio", singular: "audio", icon: "audio" },
+  {
+    id: "images",
+    name: "Images",
+    singular: "image",
+    icon: "image",
+    description: "Convert, compress, resize, and build favicons.",
+  },
+  {
+    id: "pdf",
+    name: "PDF",
+    singular: "PDF",
+    icon: "file",
+    description: "Merge, split, organize, and clean up documents.",
+  },
+  {
+    id: "video",
+    name: "Video",
+    singular: "video",
+    icon: "video",
+    description: "Compress, trim, and turn clips into GIFs.",
+  },
+  {
+    id: "gif",
+    name: "GIF",
+    singular: "GIF",
+    icon: "film",
+    description: "Build and optimize short animations.",
+  },
+  {
+    id: "audio",
+    name: "Audio",
+    singular: "audio",
+    icon: "audio",
+    description: "Convert and trim sound files.",
+  },
 ];

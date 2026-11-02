@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HeroActions, FeaturedFooterLink } from "@/components/landing/hero-actions";
 import { HeroDemo } from "@/components/landing/hero-demo";
 import { ToolCard } from "@/components/tools/tool-card";
+import { CategoryIcon, Icon } from "@/components/ui/icon";
 import { FEATURED_SLUGS, TOOLS, getCategoryCounts, getTool } from "@/lib/tools/registry";
 import { CATEGORIES } from "@/lib/tools/types";
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl } from "@/lib/constants";
@@ -110,6 +111,9 @@ const structuredData = [
 const heroMeta =
   "flex flex-wrap items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.04em] text-ink-muted md:text-[11px] [&>span+span]:before:mr-2.5 [&>span+span]:before:text-line-strong [&>span+span]:before:content-['·']";
 
+const categoryChip =
+  "inline-flex h-8 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-xs text-ink transition-colors hover:border-line-strong";
+
 const stepTitle =
   "mt-5 border-t border-line pt-5 font-display text-[22px] font-semibold leading-tight tracking-[-0.035em]";
 const stepCopy = "mt-2 text-[15px] leading-normal text-ink-muted";
@@ -150,7 +154,10 @@ export default function HomePage() {
 
       <section className={section} id="tools">
         <div className={shell}>
-          <p className={sectionLabel}>01 / Toolbox</p>
+          <p className={sectionLabel}>
+            <Icon name="grid" size={13} />
+            01 / Toolbox
+          </p>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <h2 className={h2Class}>Everyday files, handled.</h2>
@@ -165,18 +172,30 @@ export default function HomePage() {
               <ToolCard key={tool.slug} tool={tool} />
             ))}
           </div>
-          <p className="mt-5 font-mono text-xs tracking-[0.02em] text-ink-muted">
-            {CATEGORIES.map((category) => `${category.name} ${counts[category.id]}`).join(" · ")}
-          </p>
-          <div className="mt-3">
-            <FeaturedFooterLink />
+          <div className="mt-5 flex flex-wrap gap-2">
+            {CATEGORIES.map((category) => (
+              <Link
+                key={category.id}
+                href={`/tools?category=${category.id}`}
+                className={categoryChip}
+              >
+                <CategoryIcon category={category.id} size={14} />
+                {category.name}
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded bg-code px-1 font-mono text-[9px] tabular-nums text-ink-muted">
+                  {counts[category.id]}
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
       <section className={section} id="how-it-works">
         <div className={shell}>
-          <p className={sectionLabel}>02 / How it works</p>
+          <p className={sectionLabel}>
+            <Icon name="sliders" size={13} />
+            02 / How it works
+          </p>
           <h2 className={displayL}>Drop. Adjust. Done.</h2>
           <div className="mt-9 grid gap-8 md:mt-14 md:grid-cols-3 md:gap-10">
             <div>
@@ -207,7 +226,10 @@ export default function HomePage() {
 
       <section className={section} id="why-local">
         <div className={shell}>
-          <p className={sectionLabel}>03 / Why local</p>
+          <p className={sectionLabel}>
+            <Icon name="shield" size={13} />
+            03 / Why local
+          </p>
           <div className="grid gap-7 md:grid-cols-2 md:gap-10 xl:grid-cols-[1.15fr_1fr_1fr_1fr]">
             <div className="max-w-[360px] md:col-span-2 xl:col-span-1">
               <h2 className={cn(h2Class, "mb-[18px]")}>Privacy you can verify.</h2>
@@ -246,7 +268,10 @@ export default function HomePage() {
 
       <section className={section} id="faq">
         <div className={shell}>
-          <p className={sectionLabel}>04 / FAQ</p>
+          <p className={sectionLabel}>
+            <Icon name="info" size={13} />
+            04 / FAQ
+          </p>
           <div className="grid gap-8 min-[900px]:grid-cols-[4fr_8fr] min-[900px]:gap-16">
             <div>
               <h2 className={cn(h2Class, "mb-5")}>Questions, answered.</h2>
