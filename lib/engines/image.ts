@@ -281,15 +281,9 @@ export async function compressImage(
   check();
   const originalSize = input.file.size;
   const initial = fitWithin(input.width, input.height, options.maxWidth, options.maxHeight);
-  let format: ImageFormat =
-    options.format === "auto"
-      ? options.mode === "target"
-        ? "webp"
-        : input.format
-      : options.format;
+  let format: ImageFormat = options.format === "auto" ? input.format : options.format;
   if (options.mode === "target" && format === "png") {
-    // PNG cannot reliably reach a byte target. Keep user's explicit choice but still try.
-    options.onStage?.("Encoding PNG. Target sizes are not reliable for PNG.");
+    options.onStage?.("Keeping PNG. Reducing dimensions to reach the target size.");
   }
   const background = format === "jpg" ? "#FFFFFF" : undefined;
 

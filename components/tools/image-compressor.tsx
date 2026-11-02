@@ -52,6 +52,14 @@ export function ImageCompressorTool() {
   const heightValid = maxHeight === 0 || (maxHeight >= 32 && maxHeight <= 16384);
   const firstImage = queue.items.find((item) => item.loaded)?.loaded;
   const aspect = firstImage ? firstImage.width / firstImage.height : 1;
+  const effectiveFormat = format === "auto" ? firstImage?.format : format;
+  const keepsSourceFormat = format === "auto";
+  const formatSummary = keepsSourceFormat
+    ? firstImage
+      ? `${firstImage.format.toUpperCase()} in, ${firstImage.format.toUpperCase()} out`
+      : "Each input keeps its format"
+    : `Converted to ${format.toUpperCase()}`;
+  const pngOutput = effectiveFormat === "png";
 
   const setWidth = (value: number) => {
     setMaxWidth(value);
@@ -171,9 +179,17 @@ export function ImageCompressorTool() {
             notes={
               mode === "target"
                 ? [
-                    `Target ${formatBytes(targetBytes)} · format ${format === "auto" ? "WebP (auto)" : format.toUpperCase()}. Target mode is an estimate, not a guarantee.`,
+                    `Target ${formatBytes(targetBytes)} · ${Array.from(
+                      new Set(results.map((item) => item.output.format.toUpperCase())),
+                    ).join(" / ")} output. Target mode is an estimate, not a guarantee.`,
                   ]
-                : undefined
+                : [
+                    `${Array.from(
+                      new Set(results.map((item) => item.output.format.toUpperCase())),
+                    ).join(" / ")} output · ${
+                      keepsSourceFormat ? "same as each input" : "chosen output format"
+                    }.`,
+                  ]
             }
           />
         ) : errors.length > 0 && !busy ? (
@@ -207,8 +223,8 @@ export function ImageCompressorTool() {
               {queue.items.length === 0
                 ? "Add at least one image to begin."
                 : mode === "target"
-                  ? `Target: ${formatBytes(targetBytes)} per image.`
-                  : `Quality ${quality}. Output keeps ${format === "auto" ? "each source format" : format.toUpperCase()}.`}
+                  ? `Target: ${formatBytes(targetBytes)} per image · ${formatSummary}.`
+                  : `Quality ${quality} · ${formatSummary}.`}
             </p>
           }
         >
@@ -239,7 +255,11 @@ export function ImageCompressorTool() {
             <Field
               label={`Quality · ${quality}`}
               htmlFor="compress-quality"
-              help="A lower quality makes a smaller file. 75 is a practical default."
+              help={
+                pngOutput
+                  ? "PNG is lossless, so quality does not change it. Lower the max width or height to shrink a PNG."
+                  : "A lower quality makes a smaller file. 75 is a practical default."
+              }
             >
               <input
                 id="compress-quality"
@@ -256,7 +276,11 @@ export function ImageCompressorTool() {
             <Field
               label="Target size"
               htmlFor="compress-target"
-              help="Auto format uses WebP in target mode because PNG cannot reliably hit a byte target."
+              help={
+                effectiveFormat === "png"
+                  ? "PNG is lossless, so this target is approximate. The result may need a smaller width or height."
+                  : "The result is approximate. Auto keeps each input's format."
+              }
             >
               <div className={twoCol}>
                 <input
@@ -291,9 +315,15 @@ export function ImageCompressorTool() {
             label="Output format"
             htmlFor="compress-format"
             help={
-              mode === "target" && format === "auto"
-                ? "Auto uses WebP in target mode."
-                : "Auto keeps the input format in quality mode."
+              format === "auto"
+                ? effectiveFormat === "png"
+                  ? "Auto keeps PNG as PNG. PNG is lossless, so quality does not change it; use max width or height to shrink it."
+                  : "Auto keeps each input's own format."
+                : `All images become ${format.toUpperCase()}.${
+                    format === "png" && mode === "quality"
+                      ? " PNG is lossless, so quality does not change it."
+                      : ""
+                  }`
             }
           >
             <select
@@ -303,7 +333,7 @@ export function ImageCompressorTool() {
               onChange={(event) => setFormat(event.target.value as "auto" | ImageFormat)}
               disabled={busy}
             >
-              <option value="auto">Auto</option>
+              <option value="auto">Auto (same as input)</option>
               <option value="webp">WebP</option>
               <option value="jpg">JPG</option>
               <option value="png">PNG</option>
