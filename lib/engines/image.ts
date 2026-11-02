@@ -314,17 +314,24 @@ export async function compressImage(
       background,
     );
     check();
+    const useOriginal =
+      blob.size >= originalSize &&
+      initial.width === input.width &&
+      initial.height === input.height &&
+      format === input.format;
+    const finalBlob = useOriginal ? input.file : blob;
     return {
-      blob,
+      blob: finalBlob,
       width: initial.width,
       height: initial.height,
-      fileName: outputName(input.file.name, "compressed", format),
+      fileName: useOriginal ? input.file.name : outputName(input.file.name, "compressed", format),
       mime: formatToMime(format),
       format,
       originalSize,
-      outputSize: blob.size,
+      outputSize: finalBlob.size,
       quality: options.quality,
       targetReached: true,
+      keptOriginal: useOriginal,
     };
   }
 

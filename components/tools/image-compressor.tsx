@@ -184,6 +184,9 @@ export function ImageCompressorTool() {
                     ).join(" / ")} output. Target mode is an estimate, not a guarantee.`,
                   ]
                 : [
+                    ...(results.some((item) => item.output.keptOriginal)
+                      ? ["PNG is lossless and re-encoding in the browser can increase size. LocalKit automatically kept your original file."]
+                      : []),
                     `${Array.from(
                       new Set(results.map((item) => item.output.format.toUpperCase())),
                     ).join(" / ")} output · ${
