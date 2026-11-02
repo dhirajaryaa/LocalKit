@@ -6,6 +6,8 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { useSearch } from "@/components/search/search-provider";
 import { Icon } from "@/components/ui/icon";
+import { brand, brandMark, headerNav, iconButton, kbd } from "@/lib/ui";
+import { cn } from "@/lib/ui";
 import { BrandMark } from "./footer";
 
 export function Header() {
@@ -51,38 +53,47 @@ export function Header() {
 
   return (
     <>
-      <header className="site-header">
-        <div className="shell header-inner">
-          <Link href="/" className="brand" aria-label="LocalKit home">
+      <header className="sticky top-0 z-40 h-16 border-b border-line bg-bg">
+        <div className="mx-auto flex h-full w-[calc(100%-2.5rem)] max-w-[1200px] items-center justify-between gap-6 md:w-[calc(100%-5rem)]">
+          <Link href="/" className={brand} aria-label="LocalKit home">
             <BrandMark />
             LocalKit
           </Link>
 
-          <nav className="header-nav" aria-label="Primary">
+          <nav className={headerNav} aria-label="Primary">
             <Link href="/tools">Tools</Link>
             <Link href="/#faq">FAQ</Link>
           </nav>
 
-          <div className="header-actions">
-            <button type="button" className="search-trigger" onClick={open} aria-label="Search tools">
+          <div className="flex items-center gap-2 md:gap-2">
+            <button
+              type="button"
+              className="hidden h-9 items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 pl-3 text-[13px] text-ink-muted transition-colors hover:border-line-strong hover:text-ink md:inline-flex"
+              onClick={open}
+              aria-label="Search tools"
+            >
               <Icon name="search" size={16} />
               <span>Search</span>
-              <span className="kbd" aria-hidden="true">
+              <span className={kbd} aria-hidden="true">
                 {shortcut}
               </span>
             </button>
             <button
               type="button"
-              className="icon-button theme-toggle"
+              className={cn(iconButton, "hidden md:inline-flex")}
               onClick={toggleTheme}
-              aria-label={mounted ? `Switch to ${resolvedTheme === "dark" ? "light" : "dark"} theme` : "Switch theme"}
+              aria-label={
+                mounted
+                  ? `Switch to ${resolvedTheme === "dark" ? "light" : "dark"} theme`
+                  : "Switch theme"
+              }
               title="Switch theme"
             >
               <Icon name={mounted && resolvedTheme === "dark" ? "sun" : "moon"} size={18} />
             </button>
             <button
               type="button"
-              className="icon-button mobile-search-button"
+              className={cn(iconButton, "md:hidden")}
               onClick={open}
               aria-label="Search tools"
             >
@@ -91,7 +102,7 @@ export function Header() {
             <button
               id="mobile-menu-trigger"
               type="button"
-              className="icon-button mobile-menu-button"
+              className={cn(iconButton, "md:hidden")}
               onClick={() => setMenuOpen((value) => !value)}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               aria-expanded={menuOpen}
@@ -105,20 +116,23 @@ export function Header() {
       <div
         id="mobile-menu"
         ref={menuRef}
-        className={`mobile-menu${menuOpen ? " open" : ""}`}
+        className={cn(
+          "fixed inset-x-0 top-16 z-30 border-b border-line bg-raised p-5 md:hidden",
+          menuOpen ? "block" : "hidden",
+        )}
         aria-hidden={!menuOpen}
       >
-        <nav aria-label="Mobile">
-          <Link href="/tools" tabIndex={menuOpen ? 0 : -1}>
+        <nav className="grid gap-1" aria-label="Mobile">
+          <Link href="/tools" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
             Tools
           </Link>
-          <Link href="/#faq" tabIndex={menuOpen ? 0 : -1}>
+          <Link href="/#faq" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
             FAQ
           </Link>
-          <Link href="/privacy" tabIndex={menuOpen ? 0 : -1}>
+          <Link href="/privacy" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
             Privacy
           </Link>
-          <Link href="/licenses" tabIndex={menuOpen ? 0 : -1}>
+          <Link href="/licenses" tabIndex={menuOpen ? 0 : -1} className={mobileLink}>
             Licenses
           </Link>
           <button
@@ -128,13 +142,12 @@ export function Header() {
               open();
             }}
             tabIndex={menuOpen ? 0 : -1}
+            className={mobileLink}
           >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span className="inline-flex items-center gap-2">
               <Icon name="search" size={16} /> Search tools
             </span>
-            <span className="kbd" style={{ marginLeft: "auto" }}>
-              {shortcut}
-            </span>
+            <span className={cn(kbd, "ml-auto")}>{shortcut}</span>
           </button>
           <button
             type="button"
@@ -143,8 +156,9 @@ export function Header() {
               setMenuOpen(false);
             }}
             tabIndex={menuOpen ? 0 : -1}
+            className={mobileLink}
           >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span className="inline-flex items-center gap-2">
               <Icon name={mounted && resolvedTheme === "dark" ? "sun" : "moon"} size={16} />
               {mounted ? `Use ${resolvedTheme === "dark" ? "light" : "dark"} theme` : "Toggle theme"}
             </span>
@@ -154,3 +168,6 @@ export function Header() {
     </>
   );
 }
+
+const mobileLink =
+  "flex min-h-11 items-center border-0 border-b border-line bg-transparent px-0 py-2 text-left text-base text-ink";

@@ -10,6 +10,7 @@ import { CATEGORIES } from "@/lib/tools/types";
 import type { CategoryId, Tool } from "@/lib/tools/types";
 import { TOOLS } from "@/lib/tools/registry";
 import { Icon } from "@/components/ui/icon";
+import { btnSecondary, btnSm, cn, iconButton, kbd } from "@/lib/ui";
 
 interface CommandPaletteProps {
   onClose: () => void;
@@ -246,14 +247,14 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
 
   return (
     <div
-      className="palette-backdrop"
+      className="fixed inset-0 z-[80] flex items-start justify-center bg-bg/85 p-5 pt-[15vh] max-md:items-stretch max-md:p-0"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
-        className="palette"
+        className="flex max-h-[70vh] w-[min(640px,100%)] flex-col overflow-hidden rounded-xl border border-line bg-raised shadow-sm max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:rounded-none max-md:border-0"
         role="dialog"
         aria-modal="true"
         aria-labelledby="palette-title"
@@ -261,12 +262,12 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
         <h2 id="palette-title" className="sr-only">
           Search tools
         </h2>
-        <div className="palette-input-row">
-          <Icon name="search" size={18} className="muted" />
+        <div className="flex items-center gap-3 border-b border-line px-4 max-md:min-h-16 max-md:pt-[env(safe-area-inset-top)]">
+          <Icon name="search" size={18} className="text-ink-muted" />
           <input
             ref={inputRef}
             id="palette-search-input"
-            className="palette-input"
+            className="h-14 flex-1 border-0 bg-transparent text-base text-ink outline-none placeholder:text-ink-muted"
             type="text"
             value={query}
             placeholder={`Search ${TOOLS.length} tools...`}
@@ -281,12 +282,12 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onInputKeyDown}
           />
-          <span className="kbd" aria-hidden="true">
+          <span className={kbd} aria-hidden="true">
             Esc
           </span>
           <button
             type="button"
-            className="icon-button mobile-search-button"
+            className={cn(iconButton, "md:hidden")}
             aria-label="Close search"
             onClick={onClose}
             data-palette-tab
@@ -295,16 +296,21 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
           </button>
         </div>
 
-        <div id="search-results" className="palette-body" role="listbox" aria-label="Search results">
+        <div
+          id="search-results"
+          className="overflow-y-auto overscroll-contain p-2"
+          role="listbox"
+          aria-label="Search results"
+        >
           {noResults ? (
-            <div className="palette-empty">
-              <p>No tool matches “{query.trim()}”.</p>
-              <div className="palette-suggestions">
+            <div className="px-5 py-7">
+              <p className="text-sm text-ink-muted">No tool matches “{query.trim()}”.</p>
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
                 {suggestions.map((suggestion) => (
                   <button
                     key={suggestion}
                     type="button"
-                    className="palette-suggestion"
+                    className="h-7 rounded border border-line bg-transparent px-2.5 text-xs text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
                     onClick={() => setQuery(suggestion)}
                   >
                     {suggestion}
@@ -313,8 +319,7 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
               </div>
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ marginTop: 16 }}
+                className={cn(btnSecondary, btnSm, "mt-4")}
                 onClick={() => {
                   router.push("/tools");
                   onClose();
@@ -326,7 +331,10 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
           ) : (
             groups.map((group) => (
               <div key={group.id} role="group" aria-labelledby={`group-${group.id}`}>
-                <div className="palette-group-label" id={`group-${group.id}`}>
+                <div
+                  className="px-2.5 pb-1.5 pt-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-muted"
+                  id={`group-${group.id}`}
+                >
                   {group.label}
                 </div>
                 {group.options.map((option) => {
@@ -343,23 +351,38 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
                       role="option"
                       aria-selected={selected}
                       tabIndex={-1}
-                      className="palette-option"
+                      className={cn(
+                        "flex min-h-14 w-full items-center gap-3 rounded-md border-0 bg-transparent px-2.5 py-2 text-left text-ink hover:bg-code",
+                        selected && "bg-code",
+                      )}
                       onMouseMove={() => setActiveId(option.id)}
                       onClick={() => activate(option)}
                     >
-                      <span className="palette-option-icon" aria-hidden="true">
+                      <span
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-line text-ink-muted"
+                        aria-hidden="true"
+                      >
                         <Icon name={option.icon} size={16} />
                       </span>
-                      <span className="palette-option-text">
-                        <span className="palette-option-name">
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "block text-sm font-medium",
+                            selected && "underline decoration-accent underline-offset-[3px]",
+                          )}
+                        >
                           <HighlightedName name={option.label} query={query} />
                         </span>
                         {option.description ? (
-                          <span className="palette-option-desc">{option.description}</span>
+                          <span className="block truncate text-xs text-ink-muted">
+                            {option.description}
+                          </span>
                         ) : null}
                       </span>
                       {option.category ? (
-                        <span className="palette-option-category">{option.category}</span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-muted">
+                          {option.category}
+                        </span>
                       ) : null}
                     </button>
                   );
@@ -369,20 +392,20 @@ export function CommandPalette({ onClose }: CommandPaletteProps) {
           )}
         </div>
 
-        <div className="palette-footer">
+        <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-2.5 font-mono text-[10px] text-ink-muted max-md:pb-[calc(10px+env(safe-area-inset-bottom))]">
           <span>
-            <span className="kbd">↑</span>
-            <span className="kbd">↓</span> navigate
-            <span style={{ margin: "0 10px" }}>·</span>
-            <span className="kbd">Enter</span> open
-            <span style={{ margin: "0 10px" }}>·</span>
-            <span className="kbd">Esc</span> close
+            <span className={cn(kbd, "mr-1")}>↑</span>
+            <span className={cn(kbd, "mr-1")}>↓</span> navigate
+            <span className="mx-2.5">·</span>
+            <span className={cn(kbd, "mr-1")}>Enter</span> open
+            <span className="mx-2.5">·</span>
+            <span className={cn(kbd, "mr-1")}>Esc</span> close
           </span>
           <span>
             {TOOLS.length} tools · 0 uploads
           </span>
         </div>
-        <div className="palette-live" role="status" aria-live="polite">
+        <div className="sr-only" role="status" aria-live="polite">
           {announcement}
         </div>
       </div>
@@ -396,14 +419,7 @@ function HighlightedName({ name, query }: { name: string; query: string }) {
     <>
       {parts.map((part, index) =>
         part.match ? (
-          <span
-            key={index}
-            style={{
-              textDecoration: "underline",
-              textDecorationColor: "var(--accent)",
-              textUnderlineOffset: 3,
-            }}
-          >
+          <span key={index} className="underline decoration-accent underline-offset-[3px]">
             {part.text}
           </span>
         ) : (

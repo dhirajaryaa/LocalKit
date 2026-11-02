@@ -2,7 +2,14 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Footer } from "@/components/layout/footer";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/constants";
+import {
+  OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+  absoluteUrl,
+} from "@/lib/constants";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -46,20 +53,20 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Dhiraj Arya", url: "https://dhirajarya.in" }],
   creator: "Dhiraj Arya",
-  alternates: { canonical: "/" },
+  alternates: { canonical: absoluteUrl("/") },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
     title: SITE_TAGLINE,
     description: SITE_DESCRIPTION,
-    url: "/",
-    images: [{ url: "/og/localkit.png", width: 1200, height: 630, alt: "LocalKit" }],
+    url: absoluteUrl("/"),
+    images: [{ url: absoluteUrl(OG_IMAGE), width: 1200, height: 630, alt: "LocalKit" }],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TAGLINE,
     description: SITE_DESCRIPTION,
-    images: ["/og/localkit.png"],
+    images: [absoluteUrl(OG_IMAGE)],
   },
   robots: { index: true, follow: true },
 };
@@ -76,8 +83,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${bricolage.variable} ${geist.variable} ${geistMono.variable}`}>
-      <body>
-        <a href="#main" className="skip-link">
+      <body className="min-h-screen bg-bg text-ink antialiased">
+        <a
+          href="#main"
+          className="fixed left-5 top-3 z-[100] -translate-y-[160%] rounded-lg border border-line-strong bg-raised px-3.5 py-2.5 transition-transform focus:translate-y-0 motion-reduce:transition-none"
+        >
           Skip to main content
         </a>
         <Providers>
