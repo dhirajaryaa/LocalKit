@@ -5,6 +5,7 @@ import { useProfile } from "@/components/use-profile";
 import { ProfileCard } from "@/components/profile-card";
 import { TOOLS } from "@/lib/tools/registry";
 import { FOOTER_TOOL_SLUGS } from "@/lib/tools/registry";
+import { SUPPORT_URL } from "@/lib/constants";
 import { brand, brandMark, cn } from "@/lib/ui";
 
 const footerTools = FOOTER_TOOL_SLUGS.map((slug) => TOOLS.find((tool) => tool.slug === slug)).filter(
@@ -83,6 +84,16 @@ export function Footer() {
                 <li>
                   <a href={profileSite} target="_blank" rel="noopener noreferrer me" className={columnLink}>
                     dhirajarya.in
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={SUPPORT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(columnLink, "text-accent hover:text-ink")}
+                  >
+                    Support my work ↗
                   </a>
                 </li>
               </ul>

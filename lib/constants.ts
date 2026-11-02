@@ -45,6 +45,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const PROFILE_ENDPOINT = "https://dhirajarya.in/llms.txt";
+export const SUPPORT_URL = "https://razorpay.me/@dhirajaryaa";
 export const PROFILE_TTL = 6 * 60 * 60 * 1000;
 
 export const FALLBACK_PROFILE = {
