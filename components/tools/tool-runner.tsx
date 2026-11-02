@@ -15,6 +15,8 @@ import { PdfPageNumbersTool } from "@/components/tools/pdf-page-numbers";
 import { ImagesToPdfTool } from "@/components/tools/images-to-pdf";
 import { AudioConverterTool } from "@/components/tools/audio-converter";
 import { AudioTrimmerTool } from "@/components/tools/audio-trimmer";
+import { ImagesToGifTool } from "@/components/tools/images-to-gif";
+import { GifCompressorTool } from "@/components/tools/gif-compressor";
 import { cn, inlineWarning, shell } from "@/lib/ui";
 
 const RUNNERS: Partial<Record<string, ComponentType>> = {
@@ -32,6 +34,8 @@ const RUNNERS: Partial<Record<string, ComponentType>> = {
   "images-to-pdf": ImagesToPdfTool,
   "audio-converter": AudioConverterTool,
   "audio-trimmer": AudioTrimmerTool,
+  "images-to-gif": ImagesToGifTool,
+  "gif-compressor": GifCompressorTool,
 };
 
 export function ToolRunner({ slug }: { slug: string }) {
