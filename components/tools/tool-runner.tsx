@@ -13,6 +13,8 @@ import { OrganizePdfTool } from "@/components/tools/organize-pdf";
 import { WatermarkPdfTool } from "@/components/tools/watermark-pdf";
 import { PdfPageNumbersTool } from "@/components/tools/pdf-page-numbers";
 import { ImagesToPdfTool } from "@/components/tools/images-to-pdf";
+import { AudioConverterTool } from "@/components/tools/audio-converter";
+import { AudioTrimmerTool } from "@/components/tools/audio-trimmer";
 import { cn, inlineWarning, shell } from "@/lib/ui";
 
 const RUNNERS: Partial<Record<string, ComponentType>> = {
@@ -28,6 +30,8 @@ const RUNNERS: Partial<Record<string, ComponentType>> = {
   "watermark-pdf": WatermarkPdfTool,
   "pdf-page-numbers": PdfPageNumbersTool,
   "images-to-pdf": ImagesToPdfTool,
+  "audio-converter": AudioConverterTool,
+  "audio-trimmer": AudioTrimmerTool,
 };
 
 export function ToolRunner({ slug }: { slug: string }) {
