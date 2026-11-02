@@ -401,3 +401,339 @@ export function drawFontNote(font: PDFFont, text: string): string | null {
     return "This font does not support some characters. Use basic Latin characters.";
   }
 }
+
+export type PdfCompressLevel = "light" | "balanced" | "strong";
+
+export interface PdfProgressOptions {
+  signal?: AbortSignal;
+  onProgress?: (update: { stage?: string; progress?: number }) => void;
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    const error = new Error("Cancelled");
+    error.name = "AbortError";
+    throw error;
+  }
+}
+
+export async function compressPdf(
+  file: File,
+  level: PdfCompressLevel,
+  options: PdfProgressOptions = {},
+): Promise<Uint8Array> {
+  if (level === "light") {
+    options.onProgress?.({ stage: "Cleaning metadata", progress: 0.35 });
+    const document = await readPdf(file);
+    if (document.getPageCount() > 500) {
+      throw new Error("Compress PDF supports up to 500 pages at a time.");
+    }
+    cleanMetadata(document, `${file.name.replace(/\.pdf$/i, "")}-compressed`);
+    options.onProgress?.({ stage: "Saving PDF", progress: 0.8 });
+    const bytes = await savePdf(document);
+    throwIfAborted(options.signal);
+    options.onProgress?.({ stage: "Done", progress: 1 });
+    return bytes;
+  }
+
+  const dpi = level === "balanced" ? 150 : 110;
+  const quality = level === "balanced" ? 0.72 : 0.55;
+  const pdf = await loadPdfJs(file);
+  const output = await PDFDocument.create();
+  try {
+    if (pdf.numPages > 500) {
+      throw new Error("Compress PDF supports up to 500 pages at a time.");
+    }
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      throwIfAborted(options.signal);
+      options.onProgress?.({
+        stage: `Rendering page ${pageNumber} of ${pdf.numPages}`,
+        progress: (pageNumber - 1) / pdf.numPages,
+      });
+      const sourcePage = await pdf.getPage(pageNumber);
+      const baseViewport = sourcePage.getViewport({ scale: 1 });
+      const rendered = await renderPdfPage(pdf, pageNumber, dpi / 72, 8192, "#FFFFFF");
+      const blob = await canvasToJpeg(rendered.canvas, quality);
+      const image = await output.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+      const page = output.addPage([baseViewport.width, baseViewport.height]);
+      page.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: baseViewport.width,
+        height: baseViewport.height,
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+    cleanMetadata(output, `${file.name.replace(/\.pdf$/i, "")}-compressed`);
+    throwIfAborted(options.signal);
+    options.onProgress?.({ stage: "Saving PDF", progress: 0.96 });
+    const bytes = await savePdf(output);
+    options.onProgress?.({ stage: "Done", progress: 1 });
+    return bytes;
+  } finally {
+    await pdf.destroy().catch(() => undefined);
+  }
+}
+
+async function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("The browser could not encode this page as JPEG."))),
+      "image/jpeg",
+      quality,
+    );
+  });
+}
+
+export interface PdfImageOutput {
+  name: string;
+  blob: Blob;
+  width: number;
+  height: number;
+  pageNumber: number;
+  reduced: boolean;
+}
+
+export async function pdfToImages(
+  file: File,
+  options: {
+    format: "png" | "jpg" | "webp";
+    quality: number;
+    dpi: 72 | 150 | 300;
+    pages: number[];
+  } & PdfProgressOptions,
+): Promise<PdfImageOutput[]> {
+  const pdf = await loadPdfJs(file);
+  const outputs: PdfImageOutput[] = [];
+  try {
+    if (pdf.numPages > 1000) throw new Error("PDF to Images supports up to 1,000 pages at a time.");
+    const ext = options.format === "jpg" ? "jpg" : options.format;
+    for (let index = 0; index < options.pages.length; index += 1) {
+      throwIfAborted(options.signal);
+      const pageNumber = options.pages[index];
+      options.onProgress?.({
+        stage: `Rendering page ${pageNumber} of ${pdf.numPages}`,
+        progress: index / options.pages.length,
+      });
+      const requestedScale = options.dpi / 72;
+      const rendered = await renderPdfPage(pdf, pageNumber, requestedScale, 8192, "#FFFFFF");
+      const blob = await canvasToEncoded(rendered.canvas, options.format, options.quality);
+      outputs.push({
+        name: `page-${String(pageNumber).padStart(3, "0")}.${ext}`,
+        blob,
+        width: rendered.width,
+        height: rendered.height,
+        pageNumber,
+        reduced: rendered.scale < requestedScale - 0.001,
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+    options.onProgress?.({ stage: "Done", progress: 1 });
+    return outputs;
+  } finally {
+    await pdf.destroy().catch(() => undefined);
+  }
+}
+
+async function canvasToEncoded(
+  canvas: HTMLCanvasElement,
+  format: "png" | "jpg" | "webp",
+  quality: number,
+): Promise<Blob> {
+  const mime = format === "png" ? "image/png" : format === "jpg" ? "image/jpeg" : "image/webp";
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("The browser could not encode this page."))),
+      mime,
+      format === "png" ? undefined : quality,
+    );
+  });
+}
+
+export interface OrganizePage {
+  sourceIndex: number;
+  rotation: number;
+}
+
+export async function organizePdf(
+  file: File,
+  pages: OrganizePage[],
+  outputTitle: string,
+): Promise<Uint8Array> {
+  if (pages.length === 0) throw new Error("Keep at least one page.");
+  const source = await readPdf(file);
+  const count = source.getPageCount();
+  if (pages.some((page) => page.sourceIndex < 0 || page.sourceIndex >= count)) {
+    throw new Error("The page list no longer matches this PDF.");
+  }
+  const output = await PDFDocument.create();
+  for (const item of pages) {
+    const [page] = await output.copyPages(source, [item.sourceIndex]);
+    page.setRotation(degrees(normalizeRotation(item.rotation)));
+    output.addPage(page);
+  }
+  cleanMetadata(output, outputTitle);
+  return await savePdf(output);
+}
+
+export function normalizeRotation(value: number): number {
+  return ((value % 360) + 360) % 360;
+}
+
+export interface ImagesToPdfOptions {
+  pageSize: "a4" | "letter" | "fit";
+  orientation: "auto" | "portrait" | "landscape";
+  margin: number;
+  fit: "contain" | "cover";
+  background: string;
+  outputName: string;
+  signal?: AbortSignal;
+  onProgress?: (update: { stage?: string; progress?: number }) => void;
+}
+
+export async function imagesToPdf(
+  files: File[],
+  options: ImagesToPdfOptions,
+): Promise<Uint8Array> {
+  if (files.length === 0) throw new Error("Add at least one image.");
+  const output = await PDFDocument.create();
+  for (let index = 0; index < files.length; index += 1) {
+    throwIfAborted(options.signal);
+    options.onProgress?.({
+      stage: `Placing image ${index + 1} of ${files.length}`,
+      progress: index / files.length,
+    });
+    const loaded = await loadPdfImage(files[index]);
+    try {
+      const displayWidth = loaded.width * 72 / 96;
+      const displayHeight = loaded.height * 72 / 96;
+      let pageWidth: number;
+      let pageHeight: number;
+      if (options.pageSize === "fit") {
+        pageWidth = Math.min(14400, displayWidth) + options.margin * 2;
+        pageHeight = Math.min(14400, displayHeight) + options.margin * 2;
+      } else {
+        const standard =
+          options.pageSize === "letter"
+            ? { width: 612, height: 792 }
+            : { width: 595.28, height: 841.89 };
+        const autoLandscape = options.orientation === "auto" && loaded.width > loaded.height;
+        const landscape = options.orientation === "landscape" || autoLandscape;
+        pageWidth = landscape ? standard.height : standard.width;
+        pageHeight = landscape ? standard.width : standard.height;
+      }
+
+      const margin = Math.min(
+        Math.max(0, options.margin),
+        Math.max(0, Math.min(pageWidth, pageHeight) / 2 - 1),
+      );
+      const contentWidth = Math.max(1, pageWidth - margin * 2);
+      const contentHeight = Math.max(1, pageHeight - margin * 2);
+      const page = output.addPage([pageWidth, pageHeight]);
+      page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: pageHeight,
+        color: hexToRgb(options.background),
+      });
+
+      if (options.fit === "cover") {
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(contentWidth * 2));
+        canvas.height = Math.max(1, Math.round(contentHeight * 2));
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas is unavailable in this browser.");
+        context.fillStyle = options.background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const sourceRatio = loaded.width / loaded.height;
+        const targetRatio = canvas.width / canvas.height;
+        let sx = 0;
+        let sy = 0;
+        let sw = loaded.width;
+        let sh = loaded.height;
+        if (sourceRatio > targetRatio) {
+          sw = loaded.height * targetRatio;
+          sx = (loaded.width - sw) / 2;
+        } else {
+          sh = loaded.width / targetRatio;
+          sy = (loaded.height - sh) / 2;
+        }
+        context.drawImage(loaded.image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        const blob = await canvasToEncoded(canvas, loaded.format === "jpg" ? "jpg" : "png", 0.94);
+        const embedded =
+          loaded.format === "jpg"
+            ? await output.embedJpg(new Uint8Array(await blob.arrayBuffer()))
+            : await output.embedPng(new Uint8Array(await blob.arrayBuffer()));
+        page.drawImage(embedded, {
+          x: margin,
+          y: margin,
+          width: contentWidth,
+          height: contentHeight,
+        });
+      } else {
+        const scale = Math.min(contentWidth / loaded.width, contentHeight / loaded.height);
+        const drawWidth = loaded.width * scale;
+        const drawHeight = loaded.height * scale;
+        const embedded = await embedOriginalOrConverted(output, loaded);
+        page.drawImage(embedded, {
+          x: margin + (contentWidth - drawWidth) / 2,
+          y: margin + (contentHeight - drawHeight) / 2,
+          width: drawWidth,
+          height: drawHeight,
+        });
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    } finally {
+      URL.revokeObjectURL(loaded.url);
+    }
+  }
+  cleanMetadata(output, options.outputName.replace(/\.pdf$/i, ""));
+  throwIfAborted(options.signal);
+  options.onProgress?.({ stage: "Saving PDF", progress: 0.96 });
+  const bytes = await savePdf(output);
+  options.onProgress?.({ stage: "Done", progress: 1 });
+  return bytes;
+}
+
+interface PdfImage {
+  image: HTMLImageElement;
+  url: string;
+  width: number;
+  height: number;
+  format: "png" | "jpg" | "webp";
+  file: File;
+}
+
+async function loadPdfImage(file: File): Promise<PdfImage> {
+  const { loadImage } = await import("@/lib/engines/image");
+  const loaded = await loadImage(file);
+  return {
+    image: loaded.image,
+    url: loaded.objectUrl,
+    width: loaded.width,
+    height: loaded.height,
+    format: loaded.format,
+    file,
+  };
+}
+
+async function embedOriginalOrConverted(
+  doc: PDFDocument,
+  loaded: PdfImage,
+): Promise<Awaited<ReturnType<PDFDocument["embedPng"]>>> {
+  if (loaded.format === "jpg") {
+    return await doc.embedJpg(new Uint8Array(await loaded.file.arrayBuffer()));
+  }
+  if (loaded.format === "png") {
+    return await doc.embedPng(new Uint8Array(await loaded.file.arrayBuffer()));
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = loaded.width;
+  canvas.height = loaded.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is unavailable in this browser.");
+  context.drawImage(loaded.image, 0, 0);
+  const blob = await canvasToEncoded(canvas, "png", 1);
+  return await doc.embedPng(new Uint8Array(await blob.arrayBuffer()));
+}
