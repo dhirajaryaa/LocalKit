@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+.DS_Store
+*.log
+.env*.local
+public/ffmpeg/ffmpeg-core.js
+public/ffmpeg/ffmpeg-core.wasm
+public/pdf.worker.min.mjs
