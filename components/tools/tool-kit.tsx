@@ -4,6 +4,42 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { Icon } from "@/components/ui/icon";
 import { formatBytes, formatDuration, formatSaved } from "@/lib/files/format";
 import { describeError } from "@/lib/files/validate";
+import {
+  btnBlock,
+  btnGhost,
+  btnPrimary,
+  btnSecondary,
+  btnSm,
+  cn,
+  dropzone,
+  dropzoneDragging,
+  field,
+  fieldLabel,
+  fileAction,
+  fileList,
+  fileListFooter,
+  fileMeta,
+  fileName,
+  fileRow,
+  honesty,
+  inlineNote,
+  localBadge,
+  optionHelp,
+  panel,
+  panelBody,
+  panelHeader,
+  panelTitle,
+  progressBar,
+  progressTrack,
+  resultActions,
+  resultBody,
+  resultHeader,
+  resultPanel,
+  resultPreview,
+  resultsGrid,
+  resultStatLabel,
+  resultStatValue,
+} from "@/lib/ui";
 
 export type JobStatus = "ready" | "running" | "done" | "error";
 
@@ -267,7 +303,7 @@ export function Dropzone({
 
   return (
     <label
-      className={`dropzone${dragging ? " dragging" : ""}${compact ? " compact" : ""}`}
+      className={cn(dropzone, dragging && dropzoneDragging, compact && "min-h-[160px] py-6")}
       htmlFor={id}
       onDragEnter={(event) => {
         event.preventDefault();
@@ -291,19 +327,24 @@ export function Dropzone({
         deliver(event.dataTransfer.files);
       }}
     >
-      <span className="dropzone-icon" aria-hidden="true">
+      <span
+        className="mb-4 inline-flex size-12 items-center justify-center rounded-lg border border-line text-ink-muted"
+        aria-hidden="true"
+      >
         <Icon name="upload" size={22} />
       </span>
-      <h2>{title ?? (multiple ? "Drop files here" : "Drop a file here")}</h2>
-      <p>
-        or <span className="browse-button">browse from your device</span>
+      <h2 className="text-xl tracking-[-0.02em]">{title ?? (multiple ? "Drop files here" : "Drop a file here")}</h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        or <span className="text-ink underline underline-offset-[3px]">browse from your device</span>
       </p>
-      <span className="limits">{formats} · {limitText}</span>
+      <span className="mt-[18px] font-mono text-[10px] tracking-[0.02em] text-ink-muted">
+        {formats} · {limitText}
+      </span>
       {sample ? (
-        <span className="sample-row">
+        <span className="mt-3">
           <button
             type="button"
-            className="text-link"
+            className="text-sm font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-accent disabled:opacity-50"
             disabled={disabled || sample.busy}
             onClick={(event) => {
               event.preventDefault();
@@ -315,10 +356,13 @@ export function Dropzone({
           </button>
         </span>
       ) : null}
-      {allowPaste ? <span className="dropzone-paste">or paste an image</span> : null}
+      {allowPaste ? (
+        <span className="mt-2 text-xs text-ink-muted">or paste an image</span>
+      ) : null}
       <input
         ref={inputRef}
         id={id}
+        className="absolute size-px overflow-hidden opacity-0"
         type="file"
         accept={accept}
         multiple={multiple}
@@ -364,33 +408,38 @@ export function FileRow({
   error,
 }: FileRowProps) {
   return (
-    <div className="file-row">
+    <div className={fileRow}>
       {index !== undefined ? (
-        <span className="file-order" aria-hidden="true">
+        <span
+          className="w-[22px] shrink-0 font-mono text-[10px] text-ink-muted max-[480px]:hidden"
+          aria-hidden="true"
+        >
           {String(index + 1).padStart(2, "0")}
         </span>
       ) : null}
-      <span className="file-thumb">{thumbnail ?? <Icon name="file" size={20} />}</span>
-      <div className="file-info">
-        <div className="file-name" title={name}>
+      <span className="inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-code text-ink-muted md:size-12 [&_img]:size-full [&_img]:object-cover">
+        {thumbnail ?? <Icon name="file" size={20} />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className={fileName} title={name}>
           {middleName(name)}
         </div>
-        <div className="file-meta">
+        <div className={fileMeta}>
           <span>{formatBytes(size)}</span>
           {meta ? <span>{meta}</span> : null}
         </div>
         {error ? (
-          <div className="file-error" role="alert">
+          <div className="mt-1 text-xs text-danger" role="alert">
             {error}
           </div>
         ) : null}
         {extra}
       </div>
-      <div className="file-actions">
+      <div className="flex items-center gap-0.5">
         {onMoveUp ? (
           <button
             type="button"
-            className="file-action reorder"
+            className={cn(fileAction, "max-[480px]:hidden")}
             aria-label={`Move ${name} up`}
             onClick={onMoveUp}
             disabled={disabled || !canMoveUp}
@@ -401,7 +450,7 @@ export function FileRow({
         {onMoveDown ? (
           <button
             type="button"
-            className="file-action reorder"
+            className={cn(fileAction, "max-[480px]:hidden")}
             aria-label={`Move ${name} down`}
             onClick={onMoveDown}
             disabled={disabled || !canMoveDown}
@@ -412,7 +461,7 @@ export function FileRow({
         {onRemove ? (
           <button
             type="button"
-            className="file-action danger"
+            className={cn(fileAction, "hover:text-danger")}
             aria-label={`Remove ${name}`}
             onClick={onRemove}
             disabled={disabled}
@@ -439,12 +488,17 @@ export function FileList({
   disabled?: boolean;
 }) {
   return (
-    <div className="file-list">
+    <div className={fileList}>
       {children}
-      <div className="file-list-footer">
+      <div className={fileListFooter}>
         <span>{summary}</span>
         {onAdd ? (
-          <button type="button" className="upload-more" onClick={onAdd} disabled={disabled}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-xs text-ink underline underline-offset-[3px] disabled:opacity-50"
+            onClick={onAdd}
+            disabled={disabled}
+          >
             <Icon name="plus" size={13} />
             {addLabel}
           </button>
@@ -477,21 +531,21 @@ export function OptionsPanel({
 }) {
   return (
     <form
-      className="panel options-panel"
+      className={cn(panel, "flex max-h-[calc(100vh-112px)] flex-col max-[1100px]:max-h-none")}
       onSubmit={(event) => {
         event.preventDefault();
         if (!disabled && !busy) onAction();
       }}
     >
-      <div className="panel-header">
-        <h2>{title}</h2>
+      <div className={panelHeader}>
+        <h2 className={panelTitle}>{title}</h2>
       </div>
-      <div className="options-scroll">{children}</div>
-      <div className="options-footer">
+      <div className="flex flex-col gap-5 overflow-y-auto p-5 max-[480px]:p-4">{children}</div>
+      <div className="grid gap-2.5 border-t border-line p-4 max-md:sticky max-md:bottom-0 max-md:z-[4] max-md:bg-surface max-md:pb-[calc(16px+env(safe-area-inset-bottom))] md:p-5">
         {note}
         <button
           type="submit"
-          className="btn btn-primary btn-block"
+          className={cn(btnPrimary, btnBlock)}
           disabled={disabled || busy}
           aria-busy={busy}
         >
@@ -516,11 +570,15 @@ export function JobStatus({
   const { state, cancel } = job;
   if (state.status === "error") {
     return (
-      <div className="fatal-error" role="alert">
-        <h2>That did not finish</h2>
-        <p>{state.error}</p>
+      <div className="rounded-xl border border-danger/35 bg-danger/5 p-5" role="alert">
+        <h2 className="text-base text-danger">That did not finish</h2>
+        <p className="mt-1.5 text-[13px] text-ink-muted">{state.error}</p>
         {onRetry ? (
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}>
+          <button
+            type="button"
+            className={cn(btnSecondary, btnSm, "mt-3.5")}
+            onClick={onRetry}
+          >
             Try again
           </button>
         ) : null}
@@ -529,22 +587,25 @@ export function JobStatus({
   }
   if (state.status === "running") {
     return (
-      <div className={`progress-box${inline ? " inline" : ""}`} aria-live="polite">
-        <div className="progress-head">
-          <span className="progress-label">{state.stage || "Working"}</span>
-          <span className="progress-time">
+      <div
+        className={cn("rounded-xl border border-line bg-surface p-[18px] px-5", inline && "")}
+        aria-live="polite"
+      >
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <span className="text-[13px] font-medium">{state.stage || "Working"}</span>
+          <span className="font-mono text-[10px] text-ink-muted">
             {state.progress !== null ? `${Math.round(state.progress * 100)}%` : "Working"}
             {state.elapsed >= 3 ? ` · ${formatDuration(state.elapsed)}` : ""}
           </span>
         </div>
-        <div className="progress-track">
+        <div className={progressTrack}>
           <div
-            className={`progress-bar${state.progress === null ? " indeterminate" : ""}`}
+            className={cn(progressBar, state.progress === null && "w-[35%] animate-pulse")}
             style={state.progress !== null ? { width: `${state.progress * 100}%` } : undefined}
           />
         </div>
-        <div className="progress-actions">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={cancel}>
+        <div className="mt-3.5 flex justify-end">
+          <button type="button" className={cn(btnSecondary, btnSm)} onClick={cancel}>
             Cancel
           </button>
         </div>
@@ -553,7 +614,7 @@ export function JobStatus({
   }
   if (state.cancelled && state.stage) {
     return (
-      <p className="inline-note" role="status">
+      <p className={inlineNote} role="status">
         {state.stage}
       </p>
     );
@@ -575,26 +636,28 @@ export function ResultShell({
   children?: ReactNode;
 }) {
   return (
-    <section className="result-panel" aria-labelledby="result-title">
-      <div className="result-header">
-        <h2 id="result-title">{title}</h2>
-        <span className="local-badge">
+    <section className={resultPanel} aria-labelledby="result-title">
+      <div className={resultHeader}>
+        <h2 id="result-title" className="text-base tracking-[-0.01em]">
+          {title}
+        </h2>
+        <span className={localBadge}>
           <Icon name="check" size={12} /> Ready
         </span>
       </div>
-      <div className="result-body">
+      <div className={resultBody}>
         {stats && stats.length > 0 ? (
-          <div className="result-stats">
+          <div className={resultsGrid}>
             {stats.map((stat) => (
-              <div className="result-stat" key={stat.label}>
-                <span>{stat.label}</span>
-                <strong>{stat.value}</strong>
+              <div key={stat.label}>
+                <span className={resultStatLabel}>{stat.label}</span>
+                <strong className={resultStatValue}>{stat.value}</strong>
               </div>
             ))}
           </div>
         ) : null}
         {preview}
-        {actions ? <div className="result-actions">{actions}</div> : null}
+        {actions ? <div className={resultActions}>{actions}</div> : null}
         {children}
       </div>
     </section>
@@ -603,7 +666,7 @@ export function ResultShell({
 
 export function StartOver({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
   return (
-    <button type="button" className="btn btn-ghost btn-sm" onClick={onClick} disabled={disabled}>
+    <button type="button" className={cn(btnGhost, btnSm)} onClick={onClick} disabled={disabled}>
       <Icon name="refresh" size={14} />
       Start over
     </button>
@@ -622,16 +685,21 @@ export function DownloadRow({
   meta?: string;
 }) {
   return (
-    <div className="result-file-row">
-      <div style={{ minWidth: 0 }}>
-        <div className="file-name" title={name}>
+    <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-2.5 text-[13px] last:border-b-0">
+      <div className="min-w-0">
+        <div className={fileName} title={name}>
           {middleName(name)}
         </div>
-        <div className="file-meta">
+        <div className={cn(fileMeta, "mt-0")}>
           {blob ? <span>{formatBytes(blob.size)}</span> : meta ? <span>{meta}</span> : null}
         </div>
       </div>
-      <button type="button" className="btn btn-ghost btn-sm" onClick={onDownload} aria-label={`Download ${name}`}>
+      <button
+        type="button"
+        className={cn(btnGhost, btnSm)}
+        onClick={onDownload}
+        aria-label={`Download ${name}`}
+      >
         <Icon name="download" size={14} />
         Download
       </button>
@@ -649,23 +717,23 @@ export function SizeStats({
   extra?: Array<{ label: string; value: string }>;
 }) {
   return (
-    <div className="result-stats">
-      <div className="result-stat">
-        <span>Before</span>
-        <strong>{formatBytes(original)}</strong>
+    <div className={resultsGrid}>
+      <div>
+        <span className={resultStatLabel}>Before</span>
+        <strong className={resultStatValue}>{formatBytes(original)}</strong>
       </div>
-      <div className="result-stat">
-        <span>After</span>
-        <strong>{formatBytes(output)}</strong>
+      <div>
+        <span className={resultStatLabel}>After</span>
+        <strong className={resultStatValue}>{formatBytes(output)}</strong>
       </div>
-      <div className="result-stat">
-        <span>Change</span>
-        <strong>{formatSaved(original, output)}</strong>
+      <div>
+        <span className={resultStatLabel}>Change</span>
+        <strong className={resultStatValue}>{formatSaved(original, output)}</strong>
       </div>
       {extra?.map((item) => (
-        <div className="result-stat" key={item.label}>
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
+        <div key={item.label}>
+          <span className={resultStatLabel}>{item.label}</span>
+          <strong className={resultStatValue}>{item.value}</strong>
         </div>
       ))}
     </div>
@@ -684,10 +752,12 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="field">
-      <label htmlFor={htmlFor}>{label}</label>
+    <div className={field}>
+      <label className={fieldLabel} htmlFor={htmlFor}>
+        {label}
+      </label>
       {children}
-      {help ? <div className="option-help">{help}</div> : null}
+      {help ? <div className={optionHelp}>{help}</div> : null}
     </div>
   );
 }

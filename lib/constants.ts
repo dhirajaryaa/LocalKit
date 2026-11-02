@@ -1,9 +1,10 @@
+export { SITE_URL, absoluteUrl } from "@/lib/env";
+
 export const SITE_NAME = "LocalKit";
 export const SITE_TAGLINE = "Everyday file tools that never leave your device.";
 export const SITE_DESCRIPTION =
   "Compress, convert, merge, trim, and extract images, PDFs, video, GIFs, and audio. Every tool runs in your browser.";
-
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://localkit.example";
+export const OG_IMAGE = "/og/localkit.png";
 
 export const LIMITS = {
   image: {

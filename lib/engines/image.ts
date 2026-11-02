@@ -137,9 +137,9 @@ export function drawImage(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   const fit = options.fit ?? "stretch";
-  const background = options.background ?? "#FFFFFF";
+  const background = options.background;
 
-  if (fit !== "stretch" || background) {
+  if (background) {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, width, height);
   }
@@ -212,7 +212,7 @@ export async function convertImage(
     width: input.width,
     height: input.height,
     fit: "stretch",
-    background: options.format === "jpg" ? options.background : "#00000000",
+    background: options.format === "jpg" ? options.background : undefined,
   });
   if (options.format === "jpg") {
     const ctx = canvas.getContext("2d");
@@ -259,9 +259,14 @@ async function encodeAt(
   height: number,
   format: ImageFormat,
   quality: number,
-  background: string,
+  background: string | undefined,
 ): Promise<Blob> {
-  const canvas = drawImage(image, { width, height, fit: "stretch", background });
+  const canvas = drawImage(image, {
+    width,
+    height,
+    fit: "stretch",
+    background: format === "jpg" ? background : undefined,
+  });
   return canvasToBlob(canvas, format, quality);
 }
 
@@ -286,9 +291,9 @@ export async function compressImage(
     // PNG cannot reliably reach a byte target. Keep user's explicit choice but still try.
     options.onStage?.("Encoding PNG. Target sizes are not reliable for PNG.");
   }
-  const background = "#FFFFFF";
+  const background = format === "jpg" ? "#FFFFFF" : undefined;
 
-  if (options.mode === "target" && originalSize <= options.targetBytes && format === input.format) {
+  if (options.mode === "target" && originalSize <= options.targetBytes) {
     return {
       blob: input.file,
       width: input.width,
@@ -487,39 +492,24 @@ export async function resizeImage(
     targetHeight = Math.max(1, Math.round(input.height * (options.percentage / 100)));
   }
   if (!options.allowUpscale) {
-    if (targetWidth > input.width || targetHeight > input.height) {
-      const ratio = Math.min(input.width / targetWidth, input.height / targetHeight, 1);
-      targetWidth = Math.round(targetWidth * ratio);
-      targetHeight = Math.round(targetHeight * ratio);
-    }
+    targetWidth = Math.min(targetWidth, input.width);
+    targetHeight = Math.min(targetHeight, input.height);
   }
-  const fitsWithin = targetWidth <= input.width && targetHeight <= input.height;
-  if (!fitsWithin && options.mode === "dimensions" && !options.allowUpscale) {
-    targetWidth = input.width;
-    targetHeight = input.height;
+  let canvasWidth = targetWidth;
+  let canvasHeight = targetHeight;
+  if (options.mode === "dimensions" && options.fit === "contain") {
+    let ratio = Math.min(targetWidth / input.width, targetHeight / input.height);
+    if (!options.allowUpscale) ratio = Math.min(ratio, 1);
+    canvasWidth = Math.max(1, Math.round(input.width * ratio));
+    canvasHeight = Math.max(1, Math.round(input.height * ratio));
   }
   const outputFormat: ImageFormat = options.format === "keep" ? input.format : options.format;
-  const fit: DrawOptions["fit"] =
-    options.fit === "contain" && outputFormat === "jpg" ? "contain" : options.fit;
   const canvas = drawImage(input.image, {
-    width: targetWidth,
-    height: targetHeight,
-    fit,
-    background: options.background,
+    width: canvasWidth,
+    height: canvasHeight,
+    fit: options.fit === "cover" ? "cover" : "stretch",
+    background: outputFormat === "jpg" ? options.background : undefined,
   });
-  if (options.fit === "cover") {
-    // Re-draw cover without the initial background tint.
-    const coverCanvas = drawImage(input.image, {
-      width: targetWidth,
-      height: targetHeight,
-      fit: "cover",
-      background: options.background,
-    });
-    canvas.width = coverCanvas.width;
-    canvas.height = coverCanvas.height;
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.drawImage(coverCanvas, 0, 0);
-  }
   const blob = await canvasToBlob(canvas, outputFormat, options.quality / 100);
   return {
     blob,
