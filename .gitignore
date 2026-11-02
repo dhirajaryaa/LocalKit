@@ -3,6 +3,7 @@ node_modules
 out
 .DS_Store
 *.log
+*.tsbuildinfo
 .env*.local
 public/ffmpeg/ffmpeg-core.js
 public/ffmpeg/ffmpeg-core.wasm
